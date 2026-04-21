@@ -1,0 +1,65 @@
+# Health check
+GET     /api/health                     controllers.HealthController.health()
+
+# Auth
+POST    /api/auth/register              controllers.AuthController.register()
+POST    /api/auth/login                 controllers.AuthController.login()
+POST    /api/auth/logout                controllers.AuthController.logout()
+POST    /api/auth/forgot-password       controllers.AuthController.forgotPassword()
+POST    /api/auth/reset-password        controllers.AuthController.resetPassword()
+
+# Sessions
+GET     /api/sessions                   controllers.SessionController.list()
+DELETE  /api/sessions/:sessionId        controllers.SessionController.logout(sessionId: String)
+
+# Rooms
+GET     /api/rooms                      controllers.RoomController.list(search: Option[String])
+GET     /api/rooms/mine                 controllers.RoomController.mine()
+POST    /api/rooms                      controllers.RoomController.create()
+GET     /api/rooms/:id                  controllers.RoomController.get(id: Long)
+PUT     /api/rooms/:id                  controllers.RoomController.update(id: Long)
+DELETE  /api/rooms/:id                  controllers.RoomController.delete(id: Long)
+POST    /api/rooms/:id/join             controllers.RoomController.join(id: Long)
+POST    /api/rooms/:id/leave            controllers.RoomController.leave(id: Long)
+GET     /api/rooms/invitations/mine     controllers.RoomController.myInvitations()
+GET     /api/rooms/:id/members          controllers.RoomController.members(id: Long)
+PUT     /api/rooms/:id/members/:userId/role  controllers.RoomController.updateRole(id: Long, userId: Long)
+POST    /api/rooms/:id/members/:userId/ban   controllers.RoomController.ban(id: Long, userId: Long)
+GET     /api/rooms/:id/bans             controllers.RoomController.listBans(id: Long)
+DELETE  /api/rooms/:id/bans/:userId     controllers.RoomController.unban(id: Long, userId: Long)
+GET     /api/rooms/:id/invitations      controllers.RoomController.listInvitations(id: Long)
+POST    /api/rooms/:id/invitations      controllers.RoomController.invite(id: Long)
+
+# Messages
+GET     /api/conversations/:id/messages controllers.MessageController.list(id: Long, before: Option[Long], limit: Option[Int])
+POST    /api/conversations/:id/messages controllers.MessageController.send(id: Long)
+PUT     /api/messages/:id               controllers.MessageController.edit(id: Long)
+DELETE  /api/messages/:id               controllers.MessageController.delete(id: Long)
+
+# Contacts / DMs
+GET     /api/contacts                   controllers.ContactController.list()
+POST    /api/contacts/requests          controllers.ContactController.sendRequest()
+PUT     /api/contacts/requests/:id      controllers.ContactController.respondRequest(id: Long)
+DELETE  /api/contacts/:userId           controllers.ContactController.remove(userId: Long)
+POST    /api/contacts/:userId/block     controllers.ContactController.block(userId: Long)
+DELETE  /api/contacts/:userId/block     controllers.ContactController.unblock(userId: Long)
+GET     /api/dm/:userId                 controllers.ContactController.getDmConversation(userId: Long)
+
+# Attachments
+POST    /api/attachments                controllers.AttachmentController.upload()
+GET     /api/attachments/:id            controllers.AttachmentController.download(id: Long)
+
+# Profile
+GET     /api/profile                    controllers.ProfileController.get()
+PUT     /api/profile/password           controllers.ProfileController.changePassword()
+DELETE  /api/profile                    controllers.ProfileController.deleteAccount()
+GET     /api/users/search               controllers.ProfileController.searchUsers(username: String)
+
+# Admin (dev trigger)
+GET     /api/admin/trigger-expiration   controllers.AdminController.triggerExpiration()
+
+# WebSocket
+GET     /ws                             controllers.WebSocketController.socket()
+
+# Static assets (dev only; in prod nginx serves frontend)
+GET     /*file                          controllers.Assets.versioned(path="/public", file: Asset)

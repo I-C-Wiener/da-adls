@@ -1,0 +1,1 @@
+Read EMAIL.md, TECHNIQUES-MENU.md and REQUIREMENTS.md. Then create a project template as per suggestions from TECHNIQUES-MENU.md. Prefered technologies:  docker, websockets with some quieing mechanism, python, postgresql. Make configurable experation period for messages (1 month by default). Write unit test in advance.

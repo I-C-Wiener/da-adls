@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(java -version)",
+      "Bash(/usr/libexec/java_home -V)",
+      "Bash(JAVA_HOME=/Users/sergiivorobiov/Library/Java/JavaVirtualMachines/openjdk-17.0.2/Contents/Home sbt \"testOnly services.AttachmentServiceSpec\")",
+      "Bash(JAVA_HOME=/Users/sergiivorobiov/Library/Java/JavaVirtualMachines/openjdk-17.0.2/Contents/Home sbt test)",
+      "Bash(npx ng *)",
+      "Bash(JAVA_HOME=/Users/sergiivorobiov/Library/Java/JavaVirtualMachines/openjdk-17.0.2/Contents/Home sbt \"testOnly services.ContactServiceSpec\")",
+      "Bash(JAVA_HOME=/Users/sergiivorobiov/Library/Java/JavaVirtualMachines/openjdk-17.0.2/Contents/Home sbt \"testOnly repositories.MessageRepositorySpec\")"
+    ]
+  }
+}

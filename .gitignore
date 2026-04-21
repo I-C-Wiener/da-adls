@@ -1,0 +1,27 @@
+# Environment
+.env
+
+# Uploads volume (managed by Docker)
+uploads/
+
+# Scala / sbt
+backend/target/
+backend/project/target/
+backend/project/project/
+backend/.bsp/
+*.class
+*.log
+
+# Angular / Node
+frontend/node_modules/
+frontend/dist/
+frontend/.angular/
+
+# IDE
+.idea/
+.vscode/
+*.iml
+
+# OS
+.DS_Store
+Thumbs.db
