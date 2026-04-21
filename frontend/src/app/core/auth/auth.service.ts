@@ -56,7 +56,11 @@ export class AuthService {
     const token = this.getToken();
     if (!token) return null;
     try {
-      return JSON.parse(atob(token.split('.')[1]));
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      return {
+        userId: Number(payload.sub),
+        username: payload.username ?? '',
+      };
     } catch {
       return null;
     }

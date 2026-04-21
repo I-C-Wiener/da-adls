@@ -26,7 +26,7 @@ import { TopNavComponent } from '../../../shared/components/top-nav/top-nav.comp
   styles: [`
     .app-shell { display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
     .chat-layout { display: flex; flex: 1; overflow: hidden; }
-    .chat-main { flex: 1; display: flex; flex-direction: column; overflow: hidden; min-width: 0; }
+    .chat-main { flex: 1; display: flex; flex-direction: column; overflow: hidden; min-width: 0; min-height: 0; }
   `],
 })
 export class ChatLayoutComponent implements OnInit, OnDestroy {

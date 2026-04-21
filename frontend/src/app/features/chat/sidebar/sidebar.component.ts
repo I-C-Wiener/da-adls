@@ -1,5 +1,6 @@
 import { Component, OnInit, OnDestroy, signal, computed } from '@angular/core';
-import { Router, RouterLink, RouterLinkActive } from '@angular/router';
+import { Router, RouterLink, RouterLinkActive, NavigationEnd } from '@angular/router';
+import { filter } from 'rxjs/operators';
 import { FormsModule } from '@angular/forms';
 import { Subscription } from 'rxjs';
 import { MatListModule } from '@angular/material/list';
@@ -198,6 +199,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
   }));
 
   private wsSub?: Subscription;
+  private routeSub?: Subscription;
 
   constructor(
     private auth: AuthService,
@@ -213,6 +215,18 @@ export class SidebarComponent implements OnInit, OnDestroy {
     this.loadMyRooms();
     this.loadDms();
     this.loadInvitations();
+
+    this.routeSub = this.router.events.pipe(
+      filter(e => e instanceof NavigationEnd),
+    ).subscribe((e) => {
+      const ne = e as NavigationEnd;
+      if (/\/chat\/(room|dm)\//.test(ne.urlAfterRedirects)) {
+        this.publicOpen.set(false);
+        this.privateOpen.set(false);
+        this.contactsOpen.set(false);
+      }
+    });
+
     this.wsSub = this.ws.messages().subscribe(event => {
       if (event.type === 'kicked_from_room') {
         this.rooms.update(rooms => rooms.filter(r => r.id !== event.roomId));
@@ -231,7 +245,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
     });
   }
 
-  ngOnDestroy(): void { this.wsSub?.unsubscribe(); }
+  ngOnDestroy(): void { this.wsSub?.unsubscribe(); this.routeSub?.unsubscribe(); }
 
   private matchRoom(name: string): boolean {
     return !this.searchQuery || name.toLowerCase().includes(this.searchQuery.toLowerCase());

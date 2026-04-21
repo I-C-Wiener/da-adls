@@ -31,51 +31,56 @@ import { RelativeTimePipe } from '../../../shared/pipes/relative-time.pipe';
         <div #topSentinel class="sentinel"></div>
         @if (loadingMore()) { <div class="loading">Loading...</div> }
         @for (msg of messages(); track msg.id) {
-          <div class="message" [class.deleted]="msg.isDeleted" (mouseenter)="hoveredId.set(msg.id)" (mouseleave)="hoveredId.set(null)">
+          <div class="message" [class.deleted]="msg.isDeleted" [class.has-reply]="!!msg.replyTo"
+               (mouseenter)="hoveredId.set(msg.id)" (mouseleave)="hoveredId.set(null)">
 
             @if (msg.replyTo) {
-              <div class="reply-preview">
-                <span class="reply-sender">{{ msg.replyTo.senderName }}</span>
-                <span class="reply-content">{{ msg.replyTo.content ?? '(deleted)' | slice:0:100 }}</span>
+              <div class="reply-quote">
+                <span class="reply-quote-sender">↩ {{ msg.replyTo.senderName }}:</span>
+                <span class="reply-quote-text">{{ msg.replyTo.content ?? '(deleted)' | slice:0:120 }}</span>
               </div>
             }
 
-            <div class="message-meta">
-              <span class="sender">{{ msg.senderName }}</span>
-              <span class="time" [title]="msg.createdAt | date:'medium'">{{ msg.createdAt | relativeTime }}</span>
-              @if (hoveredId() === msg.id && !msg.isDeleted) {
-                <div class="msg-actions">
-                  <button class="action-btn" title="Reply" (click)="startReply(msg)">↩</button>
-                  @if (msg.senderId === currentUserId()) {
-                    <button class="action-btn" title="Edit" (click)="startEdit(msg)">✏️</button>
+            <div class="message-body">
+              <div class="message-meta">
+                <span class="sender">{{ msg.senderName }}</span>
+                <span class="time" [title]="msg.createdAt | date:'medium'">{{ msg.createdAt | relativeTime }}</span>
+                @if (hoveredId() === msg.id && !msg.isDeleted) {
+                  <div class="msg-actions">
+                    <button class="action-btn" title="Reply" (click)="startReply(msg)">↩</button>
+                    @if (msg.senderId === currentUserId()) {
+                      <button class="action-btn" title="Edit" (click)="startEdit(msg)">✏️</button>
+                    }
+                    @if (msg.senderId === currentUserId() || isAdminOrOwner()) {
+                      <button class="action-btn action-del" title="Delete" (click)="deleteMsg(msg)">🗑</button>
+                    }
+                  </div>
+                }
+              </div>
+
+              @if (editingId() === msg.id) {
+                <div class="edit-row">
+                  <textarea class="edit-input" [(ngModel)]="editContent" (keydown)="onEditKeydown($event, msg)" rows="2"></textarea>
+                  <button class="edit-save" (click)="saveEdit(msg)">Save</button>
+                  <button class="edit-cancel" (click)="cancelEdit()">Cancel</button>
+                </div>
+              } @else {
+                <div class="content">
+                  {{ msg.isDeleted ? '(deleted)' : msg.content }}
+                  @if (msg.isEdited && !msg.isDeleted) {
+                    <span class="edited" title="This message was edited">· edited</span>
                   }
-                  @if (msg.senderId === currentUserId() || isAdminOrOwner()) {
-                    <button class="action-btn action-del" title="Delete" (click)="deleteMsg(msg)">🗑</button>
+                </div>
+              }
+
+              @if (msg.attachments?.length) {
+                <div class="attachments">
+                  @for (attachment of msg.attachments; track attachment.id) {
+                    <app-attachment-preview [attachment]="attachment" />
                   }
                 </div>
               }
             </div>
-
-            @if (editingId() === msg.id) {
-              <div class="edit-row">
-                <textarea class="edit-input" [(ngModel)]="editContent" (keydown)="onEditKeydown($event, msg)" rows="2"></textarea>
-                <button class="edit-save" (click)="saveEdit(msg)">Save</button>
-                <button class="edit-cancel" (click)="cancelEdit()">Cancel</button>
-              </div>
-            } @else {
-              <div class="content">
-                {{ msg.isDeleted ? '(deleted)' : msg.content }}
-                @if (msg.isEdited && !msg.isDeleted) { <span class="edited">(edited)</span> }
-              </div>
-            }
-
-            @if (msg.attachments?.length) {
-              <div class="attachments">
-                @for (attachment of msg.attachments; track attachment.id) {
-                  <app-attachment-preview [attachment]="attachment" />
-                }
-              </div>
-            }
           </div>
         }
         @if (messages().length === 0 && !loadingMore()) {
@@ -101,6 +106,8 @@ import { RelativeTimePipe } from '../../../shared/pipes/relative-time.pipe';
     .message { display: flex; flex-direction: column; gap: 2px; padding: 4px 6px; border-radius: 4px; position: relative; }
     .message:hover { background: #f8f9ff; }
     .message.deleted .content { color: #999; font-style: italic; }
+    .message.has-reply .message-body { margin-left: 24px; border-left: 2px solid #d0d4ff; padding-left: 10px; }
+    .message-body { display: flex; flex-direction: column; gap: 2px; }
     .message-meta { display: flex; align-items: baseline; gap: 8px; position: relative; }
     .sender { font-weight: 600; font-size: 13px; color: #5865f2; }
     .time { font-size: 11px; color: #999; }
@@ -110,10 +117,17 @@ import { RelativeTimePipe } from '../../../shared/pipes/relative-time.pipe';
     .action-del:hover { background: #fff0f0; }
     .content { font-size: 14px; line-height: 1.4; word-break: break-word; white-space: pre-wrap; }
     .attachments { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
-    .edited { font-size: 11px; color: #999; margin-left: 4px; }
-    .reply-preview { background: #f0f2ff; border-left: 3px solid #5865f2; padding: 4px 8px; border-radius: 0 4px 4px 0; margin-bottom: 2px; display: flex; gap: 8px; font-size: 12px; max-width: 480px; }
-    .reply-sender { font-weight: 600; color: #5865f2; flex-shrink: 0; }
-    .reply-content { color: #666; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .edited { font-size: 11px; color: #aaa; margin-left: 4px; font-style: italic; cursor: default; }
+    .reply-quote {
+      display: flex; gap: 5px; align-items: baseline;
+      padding: 2px 8px; margin-bottom: 1px;
+      border-left: 2px solid #5865f2;
+      background: rgba(88,101,242,.05); border-radius: 0 3px 3px 0;
+      font-size: 11px; max-width: 480px; cursor: default;
+      color: #888;
+    }
+    .reply-quote-sender { font-weight: 600; color: #5865f2; flex-shrink: 0; }
+    .reply-quote-text { color: #999; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-style: italic; }
     .edit-row { display: flex; align-items: flex-start; gap: 6px; margin-top: 4px; }
     .edit-input { flex: 1; border: 1px solid #5865f2; border-radius: 6px; padding: 6px 10px; font-size: 14px; font-family: inherit; resize: none; }
     .edit-save, .edit-cancel { padding: 4px 10px; border: none; border-radius: 4px; cursor: pointer; font-size: 12px; }

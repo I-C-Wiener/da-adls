@@ -22,3 +22,14 @@ html, body {
   margin: 0;
   font-family: Roboto, "Helvetica Neue", sans-serif;
 }
+
+/* Router-outlet siblings inside chat-main must stretch to fill the flex container */
+app-message-area,
+app-browse-rooms,
+app-manage-room {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  overflow: hidden;
+  min-height: 0;
+}

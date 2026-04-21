@@ -132,11 +132,20 @@ class WebSocketActor(
               case Right(memberIds) =>
                 if (!memberIds.contains(uid)) sendError("Not a member")
                 else messageService.save(convId, uid, text, replyToId).foreach { msg =>
-                  userRepo.findById(uid).foreach { userOpt =>
+                  val senderFut  = userRepo.findById(uid)
+                  val replyFut   = msg.replyToId.fold(Future.successful(Option.empty[(models.Message, String)])) { rid =>
+                    messageService.findById(rid).flatMap {
+                      case None        => Future.successful(None)
+                      case Some(reply) => userRepo.findById(reply.senderId).map { u =>
+                        Some(reply -> u.map(_.username).getOrElse(reply.senderId.toString))
+                      }
+                    }
+                  }
+                  for { userOpt <- senderFut; replyOpt <- replyFut } {
                     val name = userOpt.map(_.username).getOrElse(uid.toString)
                     val event = Json.obj(
                       "type"    -> "message_received",
-                      "message" -> messageJson(msg, name),
+                      "message" -> messageJson(msg, name, replyOpt),
                       "_recipients" -> memberIds,
                     )
                     conv.roomId.foreach(rid => redisPublisher.publish(redisPublisher.roomChannel(rid), event))
@@ -189,7 +198,25 @@ class WebSocketActor(
         messageService.findById(mid).foreach {
           case None => sendError("Message not found")
           case Some(msg) =>
-            messageService.delete(mid, uid).foreach {
+            val deleteFut: Future[Either[String, Unit]] =
+              if (msg.senderId == uid) {
+                messageService.delete(mid, uid)
+              } else {
+                convRepo.findById(msg.conversationId).flatMap {
+                  case None => Future.successful(Left("Conversation not found"))
+                  case Some(conv) =>
+                    conv.roomId match {
+                      case None => Future.successful(Left("Not allowed"))
+                      case Some(rid) =>
+                        roomRepo.getMemberRole(rid, uid).flatMap {
+                          case Some(role) if role == models.MemberRole.Owner || role == models.MemberRole.Admin =>
+                            messageService.adminDelete(mid)
+                          case _ => Future.successful(Left("Not allowed"))
+                        }
+                    }
+                }
+              }
+            deleteFut.foreach {
               case Left(err) => sendError(err)
               case Right(_) =>
                 val event = Json.obj("type" -> "message_deleted", "messageId" -> mid)
@@ -236,13 +263,20 @@ class WebSocketActor(
   private def sendError(msg: String): Unit =
     out ! Json.obj("type" -> "error", "message" -> msg)
 
-  private def messageJson(msg: models.Message, senderName: String): JsValue = Json.obj(
+  private def messageJson(
+    msg: models.Message,
+    senderName: String,
+    replyOpt: Option[(models.Message, String)] = None,
+  ): JsValue = Json.obj(
     "id"             -> msg.id,
     "conversationId" -> msg.conversationId,
     "senderId"       -> msg.senderId,
     "senderName"     -> senderName,
     "content"        -> msg.content,
     "replyToId"      -> msg.replyToId,
+    "replyTo"        -> replyOpt.map { case (r, name) =>
+      Json.obj("id" -> r.id, "senderName" -> name, "content" -> r.content)
+    },
     "isEdited"       -> msg.isEdited,
     "isDeleted"      -> msg.isDeleted,
     "createdAt"      -> msg.createdAt.toString,
